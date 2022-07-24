@@ -17,7 +17,7 @@ import "@kitware/vtk.js/Rendering/WebGPU/RenderWindow";
 import RenderAbstractObj from "./RenderAbstractObj";
 import RenderWorkSpaceManager from "./RenderWorkSpaceManager";
 class RenderWindows3D extends RenderAbstractObj {
-  constructor() {
+  constructor(curWorkSpaceManager) {
     //绘制窗口
     super();
     this.renderWindow = vtkRenderWindow.newInstance();
@@ -29,7 +29,7 @@ class RenderWindows3D extends RenderAbstractObj {
     this.renderWindowInteractor;
 
     //wkManager对象
-    //this.workSpaceManager = curWorkSpaceManager;
+    this.workSpaceManager = curWorkSpaceManager;
 
     this.vtkPicker;
     this.boundProxy;
@@ -39,17 +39,17 @@ class RenderWindows3D extends RenderAbstractObj {
   // ----------------------------------------------------------------------------
   // wsw
   // ----------------------------------------------------------------------------
-  Init(vtkContainer, workSpaceManager) {
-    this.OnCreate(workSpaceManager);
+  Init(vtkContainer) {
+    this.OnCreate(this.renderer);
     this.SpecificRenderWindow(vtkContainer);
     this.SetupInteractor();
     this.SetupInteractorStyle();
     //this.ShowAxes();
   }
-  OnCreate(workSpaceManager) {
-    for (var i = 0; i < workSpaceManager.children.length; i++) {
-      var curWorkSpace = workSpaceManager.children[i];
-      curWorkSpace.SetupScene(this.renderer);
+  OnCreate(renderer) {
+    for (var i = 0; i < this.workSpaceManager.children.length; i++) {
+      var curWorkSpace = this.workSpaceManager.children[i];
+      curWorkSpace.SetupScene(renderer);
     }
 
     /*  const coneSource = vtkConeSource.newInstance({ height: 1.0 });

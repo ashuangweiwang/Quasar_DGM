@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { ref, toRaw } from "vue";
+import { toRaw } from "vue";
 
 export const useWorkSpaceStore = defineStore("workSpace", {
   state: () => {
@@ -7,9 +7,6 @@ export const useWorkSpaceStore = defineStore("workSpace", {
       gWorkSpace: undefined,
       renderWorkSpaceArray: undefined,
       selcetWorkSpace: undefined,
-      selcetGeometryArray: [],
-      selcetConvex: undefined,
-      getConvex: undefined,
     };
   },
   actions: {
@@ -20,21 +17,11 @@ export const useWorkSpaceStore = defineStore("workSpace", {
     changeRenderWorkSpace(val) {
       //this.workSapceArray = val;
       this.renderWorkSpaceArray = val;
+      console.log(toRaw(this.renderWorkSpaceArray));
     },
     getTickedWK(val) {
       this.selcetWorkSpace = val;
-    },
-    getSelcetConvex(val) {
-      this.selcetConvex = val;
-      //console.log("1213213", toRaw(this.selcetConvex));
-    },
-    getConvexFromServer(val) {
-      this.getConvex = val;
-      //console.log("1213213", toRaw(this.selcetConvex));
-    },
-    getConvexFromServer01() {
-      this.getConvex = undefined;
-      console.log("1213213", toRaw(this.selcetConvex));
+      console.log(toRaw(this.selcetWorkSpace));
     },
   },
   getters: {

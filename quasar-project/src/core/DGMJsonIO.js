@@ -17,12 +17,10 @@ class DGMJsonIO {
   }
   //接受服务器Workspace的json数据
   WorkspaceFromJson(jsondata) {
-    console.log("测试1", jsondata);
     var workspace = new DGMWorkSpace();
     //对jsondata中id和name赋值给workspace的name
     workspace.id = jsondata.id;
     workspace.Name = jsondata.name; //注意关键字目前只有DGMWorkSpace中的是大写
-
     workspace.Type = jsondata.type;
     workspace.DataFromDB = jsondata.DataFromDB;
     workspace.DataState = jsondata.DataState;
@@ -40,6 +38,7 @@ class DGMJsonIO {
       for (var index_i = 0; index_i < WorkspaceMap.length; index_i++) {
         //console.log("index_i",index_i)
         var Map1 = new DGMGeoMap2D(); //定义MAP变量
+        Map1.parent = workspace; //关联父类
         if (WorkspaceMap[index_i].hasOwnProperty("layers")) {
           //如果map[i]里面存在layer开始对layer进行操作
           //对map里面的layer数据进行操作
@@ -48,13 +47,16 @@ class DGMJsonIO {
           //var Map1 = new DGMGeoMap2D();//定义MAP变量
           for (var index_j = 0; index_j < Maplayers.length; index_j++) {
             var layer = new DGMGraphicsLayer();
+
             layer.Clear();
+            layer.parent = Map1; //关联父类
             if (Maplayers[index_j].hasOwnProperty("tiles")) {
               //如果layer中存在tiles开始对tiles操作
               var layerstiles = Maplayers[index_j]["tiles"];
 
               //var TemTile = new DGMTile();//定义临时的Tile变量
               var TemTile = new DGMTile(); //定义临时的Tile变量
+              TemTile.parent = layer;
               for (let index_z = 0; index_z < layerstiles.length; index_z++) {
                 TemTile.id = layerstiles[index_z]["id"];
                 TemTile.name = layerstiles[index_z]["name"];
@@ -63,11 +65,40 @@ class DGMJsonIO {
                 //console.log("tileinfo", TemTile.tileinfo)
                 TemTile.DataFromDB = layerstiles[index_z].DataFromDB;
                 TemTile.DataState = layerstiles[index_z].DataState;
+
                 if (layerstiles[index_z].hasOwnProperty("geometry")) {
                   //TemTile.PolyDataGeometry = layerstiles[index_z]["geometry"];//数组结构
+                  var geometry01 = layerstiles[index_z]["geometry"];
+                  var ObjectArray = [];
+                  for (let index = 0; index < geometry01.length; index++) {
+                    //var bufferedGeometry = new DGMBufferGeometry();
+                    var bufferedGeometry = new PolyDataGeometry();
+                    bufferedGeometry.id = geometry01[index]["id"];
+                    bufferedGeometry.name = geometry01[index]["name"];
+                    bufferedGeometry.FeatureID = geometry01[index]["featureid"];
+                    bufferedGeometry.Smooth = geometry01[index].Smooth;
+                    bufferedGeometry.GeoType = geometry01[index].type; //<新增加属性>
+                    if (geometry01[index].hasOwnProperty("polyData")) {
+                      bufferedGeometry.polyData = geometry01[index].polyData; // 3 0 1 2
+                    } else {
+                      var vtkpolyData = {};
+                      vtkpolyData["points"] = geometry01[index].points; //xyx
+                      vtkpolyData["cell"] = geometry01[index].trianglesindex; // 3 0 1 2
+                      bufferedGeometry.polyData = vtkpolyData;
+                    }
+                    bufferedGeometry.outLinePolyData =
+                      geometry01[index].outLinePolyData;
+                    bufferedGeometry.DataFromDB = geometry01[index].DataFromDB; //<新增加属性>
+                    bufferedGeometry.DataState = geometry01[index].DataState; //<新增加属性>
+                    ObjectArray.push(bufferedGeometry);
+                  }
+                  TemTile.PolyDataGeometry = ObjectArray;
+                  /*
                   TemTile.PolyDataGeometry = this.geometryFromJson(
-                    layerstiles[index_z]["geometry"]
+                    layerstiles[index_z]["geometry"],
+                    TemTile
                   );
+                  */
                 }
                 //TemTile.PolyDataGeometry = layerstiles[index_z]["geometry"];//数组结构
                 //console.log("tiles", TemTile.id)
@@ -78,7 +109,8 @@ class DGMJsonIO {
             //将FeatureCollection直接更改成对象
             //layer.FeatureCollection = Maplayers[index_j]["features"];
             layer.FeatureCollection = this.featureFromJson(
-              Maplayers[index_j]["features"]
+              Maplayers[index_j]["features"],
+              layer
             );
             layer.id = Maplayers[index_j]["id"];
             layer.name = Maplayers[index_j]["name"];
@@ -987,6 +1019,13 @@ class DGMJsonIO {
       bufferedGeometry.FeatureID = geometry[index]["featureid"];
       bufferedGeometry.Smooth = geometry[index].Smooth;
       bufferedGeometry.GeoType = geometry[index].type; //<新增加属性>
+
+      var vtkpolyData;
+      vtkpolyData["points"] = geometry[index].points; //xyx
+      vtkpolyData["cell"] = geometry[index].trianglesindex; // 3 0 1 2
+      bufferedGeometry.polyData = vtkpolyData;
+
+      /*
       if (bufferedGeometry.GeoType == "Tin") {
         for (let index_i = 0; index_i < geometry[index]["points"].length; ) {
           var pointsarray = [];
@@ -1000,7 +1039,6 @@ class DGMJsonIO {
         for (
           let index_i = 0;
           index_i < geometry[index]["trianglesindex"].length;
-
         ) {
           var pointsarray = [];
           pointsarray.push(geometry[index]["trianglesindex"][index_i]);
@@ -1009,9 +1047,12 @@ class DGMJsonIO {
           bufferedGeometry.trianglesindex.push(pointsarray);
           index_i = index_i + 3;
         }
-      } else {
+      }
+      else {
         bufferedGeometry.points = geometry[index]["points"];
       }
+      */
+
       bufferedGeometry.DataFromDB = geometry[index].DataFromDB; //<新增加属性>
       bufferedGeometry.DataState = geometry[index].DataState; //<新增加属性>
       ObjectArray.push(bufferedGeometry);
@@ -1048,7 +1089,7 @@ class DGMJsonIO {
     return jsondata;
   }
   //将服务器接受layer里面的feature数据转成DGMFeature()数据
-  featureFromJson(feature) {
+  featureFromJson(feature, layer) {
     //console.log("feature",feature)
     var featureCollection = new DGMFeatureCollection();
     var ObjectArray = [];
@@ -1057,6 +1098,7 @@ class DGMJsonIO {
     }
     for (let index = 0; index < feature.length; index++) {
       var layerfeature = new DGMFeature();
+      layerfeature.parent = layer;
       var visualStyle = new DGMVisualStyle();
       layerfeature.id = feature[index]["id"];
       layerfeature.Name = feature[index]["name"];
@@ -1108,7 +1150,94 @@ class DGMJsonIO {
     }
     return jsondata;
   }
+  ConvexGeometryToJson(Geometry) {
+    var jsondata = [];
+    for (let index = 0; index < Geometry.length; index++) {
+      //if (PolyDataGeometry[index].DataState != 0) {
+      var bufferedGeometryOne = {};
 
+      var bufferedGeometry = new PolyDataGeometry();
+      bufferedGeometry = Geometry[index];
+      bufferedGeometryOne.id = bufferedGeometry.id;
+      bufferedGeometryOne.name = bufferedGeometry.name;
+      //bufferedGeometryOne.points = bufferedGeometry.points
+      bufferedGeometryOne.featureid = bufferedGeometry.FeatureID;
+      bufferedGeometryOne.type = bufferedGeometry.GeoType; //<新增加属性>
+      bufferedGeometryOne.polyData = bufferedGeometry.polyData;
+      bufferedGeometryOne.outLinePolyData = bufferedGeometry.outLinePolyData;
+
+      /*
+      if (bufferedGeometryOne.type == "Tin") {
+        bufferedGeometryOne.trianglesindex = bufferedGeometry.trianglesindex;
+        bufferedGeometryOne.points = bufferedGeometry["points"];
+      } else {
+        bufferedGeometryOne.points = bufferedGeometry["points"];
+      }*/
+      bufferedGeometryOne.Smooth = bufferedGeometry.Smooth;
+      bufferedGeometryOne.DataFromDB = 1; //<新增加属性>
+      bufferedGeometryOne.DataState = 1; //<新增加属性>
+      jsondata.push(bufferedGeometryOne);
+      //}
+    }
+    return jsondata;
+  }
+  ConvexGeometryFromJson(geometry) {
+    var ObjectArray = [];
+    if (geometry == undefined) {
+      return ObjectArray;
+    }
+    for (let index = 0; index < geometry.length; index++) {
+      //var bufferedGeometry = new DGMBufferGeometry();
+      var bufferedGeometry = new PolyDataGeometry();
+      bufferedGeometry.id = geometry[index]["id"];
+      bufferedGeometry.name = geometry[index]["name"] + "Convex";
+      bufferedGeometry.FeatureID = geometry[index]["featureid"];
+      bufferedGeometry.Smooth = geometry[index].Smooth;
+      bufferedGeometry.GeoType = geometry[index].type; //<新增加属性>
+
+      if (geometry[index].hasOwnProperty("polyData")) {
+        bufferedGeometry.polyData = geometry[index].polyData; // 3 0 1 2
+      } else {
+        var vtkpolyData = {};
+        vtkpolyData["points"] = geometry[index].points; //xyx
+        vtkpolyData["cell"] = geometry[index].trianglesindex; // 3 0 1 2
+        bufferedGeometry.polyData = vtkpolyData;
+      }
+      bufferedGeometry.outLinePolyData = geometry[index].outLinePolyData;
+      /*
+      if (bufferedGeometry.GeoType == "Tin") {
+        for (let index_i = 0; index_i < geometry[index]["points"].length; ) {
+          var pointsarray = [];
+          pointsarray.push(geometry[index]["points"][index_i]);
+          pointsarray.push(geometry[index]["points"][index_i + 1]);
+          pointsarray.push(geometry[index]["points"][index_i + 2]);
+
+          bufferedGeometry.points.push(pointsarray);
+          index_i = index_i + 3;
+        }
+        for (
+          let index_i = 0;
+          index_i < geometry[index]["trianglesindex"].length;
+        ) {
+          var pointsarray = [];
+          pointsarray.push(geometry[index]["trianglesindex"][index_i]);
+          pointsarray.push(geometry[index]["trianglesindex"][index_i + 1]);
+          pointsarray.push(geometry[index]["trianglesindex"][index_i + 2]);
+          bufferedGeometry.trianglesindex.push(pointsarray);
+          index_i = index_i + 3;
+        }
+      }
+      else {
+        bufferedGeometry.points = geometry[index]["points"];
+      }
+      */
+
+      bufferedGeometry.DataFromDB = geometry[index].DataFromDB; //<新增加属性>
+      bufferedGeometry.DataState = geometry[index].DataState; //<新增加属性>
+      ObjectArray.push(bufferedGeometry);
+    }
+    return ObjectArray;
+  }
   //AJAX数据操作
   //直接连接数据库服务器获取数据
   GetWorkspaceList() {
@@ -1117,7 +1246,7 @@ class DGMJsonIO {
       type: "GET",
       contentType: "application/json",
       url: "http://182.92.3.51:5001/GetWorkspaceList", //<服务器>
-      //url:"http://localhost:5000/GetWorkspaceList",//<本地>
+      //url: "http://localhost:5000/GetWorkspaceList", //<本地>
       dataType: "json",
       async: false,
       success: function (oData) {
@@ -1138,7 +1267,7 @@ class DGMJsonIO {
       type: "GET",
       contentType: "application/json",
       url: "http://182.92.3.51:5001/GetWorkspace/" + id, //<服务器>
-      //url:"http://localhost:5000/GetWorkspace/"+id,//<本地>
+      //url: "http://localhost:5000/GetWorkspace/" + id, //<本地>
       dataType: "json",
       async: false,
       success: function (oData) {
@@ -1149,10 +1278,16 @@ class DGMJsonIO {
       },
       error: function () {
         console.log("failed to load json");
-        return 0;
+        workspace = 0;
+        //return 0;
       },
     });
-    return this.WorkspaceFromJson(workspace);
+    console.log("load json", workspace);
+    if (workspace == 0) {
+      return workspace;
+    } else {
+      return this.WorkspaceFromJson(workspace);
+    }
   }
   //<张建振>将worksapce保存到服务器上数据库
   UpdateWorkspace(gWorkspace) {
@@ -1352,6 +1487,37 @@ class DGMJsonIO {
       },
     });
     return getWorkspaceRow;
+  }
+  sendConvex(Geometry, Convex) {
+    var Convexs = Convex;
+    var data = this.ConvexGeometryToJson(Geometry);
+    Convexs["Geometry"] = data;
+    var getWorkspaceRow;
+    $.ajax({
+      type: "POST",
+      data: JSON.stringify(Convexs),
+      contentType: "application/json",
+      //url:"http://182.92.3.51:5001/GetKeyWords/" + type, //<服务器>
+      //url: "http://localhost:5000/Convex", //<本地>
+      dataType: "json",
+      async: false,
+      success: function (oData) {
+        if (oData.hasOwnProperty("msg")) {
+          getWorkspaceRow = 0;
+        } else {
+          getWorkspaceRow = oData;
+        }
+      },
+      error: function () {
+        console.log("failed to load json");
+        getWorkspaceRow = 0;
+      },
+    });
+    if (getWorkspaceRow == 0) {
+      return getWorkspaceRow;
+    } else {
+      return this.ConvexGeometryFromJson(getWorkspaceRow);
+    }
   }
 }
 export default DGMJsonIO;

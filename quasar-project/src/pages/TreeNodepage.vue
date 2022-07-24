@@ -98,10 +98,16 @@ export default defineComponent({
   setup() {
     var tree = ref();
     var ticked = ref([]);
+    var rTree = ref([]);
     const $workSpace = useWorkSpaceStore();
     // 确保解构后的state具有响应式，要使用storeToRefs方法
-    const { gWorkSpace, renderWorkSpaceArray, getWkArray } =
-      storeToRefs($workSpace);
+    const {
+      gWorkSpace,
+      renderWorkSpaceArray,
+      selcetGeometryArray,
+      getWkArray,
+      getConvex,
+    } = storeToRefs($workSpace);
     const data = computed(() => $workSpace.gWorkSpace || []);
     const data1 = computed(() => $workSpace.renderWorkSpaceArray || []);
 
@@ -139,7 +145,42 @@ export default defineComponent({
         renderSceneRoot.value[0].children.push(curWk);
       }
     }
+    function goBackWKTree(getconvex) {
+      var curWk = toRaw(getconvex);
+      console.log("ticked.value", ticked.value);
+      if (curWk != undefined && ticked.value.length != 0) {
+        var tickedWK = tree.value.getNodeByKey(ticked.value[0]);
+        console.log("goBackWKTree", tickedWK);
+        var layer = tickedWK.parent;
 
+        for (let index_i = 0; index_i < layer.ObjectArray.length; index_i++) {
+          var tiles = layer.ObjectArray[index_i];
+          for (
+            let index_j = 0;
+            index_j < tiles.PolyDataGeometry.length;
+            index_j++
+          ) {
+            var PolyDataGeometrys = tiles.PolyDataGeometry[index_j];
+            for (let index_k = 0; index_k < curWk.length; index_k++) {
+              if (curWk[index_k].id == PolyDataGeometrys.id) {
+                tickedWK.parent.ObjectArray[index_i].PolyDataGeometry[index_j] =
+                  curWk[index_k];
+                //Geometry.push(PolyDataGeometrys);
+                //console.log("22", Geometry);
+              }
+            }
+          }
+          //console.log("22", PolyDataGeometrys.FeatureID, "  1212", featureid);
+        }
+        console.log("goBackWKTree01", tickedWK);
+        console.log("goBackWKTree01", curWk);
+        //for (let index = 0; index < array.length; index++) {
+        //  const element = array[index];
+        //}
+        //renderSceneRoot.value[0].children.push(curWk);
+        $workSpace.getConvexFromServer01();
+      }
+    }
     //var selectedWK = tree.value.getNodeByKey(ticked.value[0]);
     //console.log("******", selectedWK);
     //console.log(ticked.value);
@@ -149,16 +190,20 @@ export default defineComponent({
       var tickedWK = tree.value.getNodeByKey(ticked.value[0]);
       watchEffect(() =>
         $workSpace.getTickedWK(tree.value.getNodeByKey(ticked.value[0]))
-      ); //已取得选取节点的wk（ref响应式数据还需要额外监听吗？）
+      );
+      watchEffect(() =>
+        $workSpace.getSelcetConvex(tree.value.getNodeByKey(ticked.value[0]))
+      );
     });
 
     //watchEffect(() => console.log(console.log(tree.value)));
     watchEffect(() => console.log(toRaw(renderWorkSpaceArray.value)));
     watchEffect(() => init3DViewTree(renderWorkSpaceArray.value)); //监听里面第一次值为初始值，undefined，
     watchEffect(() => initWKTree(gWorkSpace.value));
-
+    watchEffect(() => goBackWKTree(getConvex.value));
     return {
       tree,
+      rTree,
       data,
       data1,
       $workSpace,
@@ -204,6 +249,18 @@ export default defineComponent({
       recentPTreeTicked: [],
       recentSTreeTicked: [],
       recentRTreeTicked: [],
+      onRTreeTick(target) {
+        //wsw
+        console.log(target);
+        for (var i = 0; i < target.length; i++) {
+          var tickedStage = rTree.value.getNodeByKey(target[i]);
+          $workSpace.selcetGeometryArray.push(tickedStage);
+        }
+        console.log(
+          "RenderTree里选中的节点数组",
+          $workSpace.selcetGeometryArray
+        );
+      },
     };
   },
 });

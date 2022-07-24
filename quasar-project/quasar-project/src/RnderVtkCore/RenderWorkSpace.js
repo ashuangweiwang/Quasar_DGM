@@ -27,58 +27,58 @@ class RenderWorkSpace extends RenderAbstractObj {
   SetupScene(renderer) {
     //wsw 解析wk的各个层级
     //map
-    if (this.WorkSpace.ClassName == "DGMWorkSpace") {
-      for (var i = 0; i < this.WorkSpace.ObjectArray.length; i++) {
-        var oGeoMap = new RenderGeoMap();
-        this.AddObject(oGeoMap);
-        oGeoMap.SetRenderMap(this.WorkSpace.ObjectArray[i]);
-        //layer
-        for (var j = 0; j < oGeoMap.Map.ObjectArray.length; j++) {
-          var oLayer = new RenderLayer();
-          oGeoMap.AddObject(oLayer);
-          oLayer.SetRenerLayer(oGeoMap.Map.ObjectArray[j]);
-          //tile
-          for (var k = 0; k < oLayer.Layer.ObjectArray.length; k++) {
-            var oTile = new RenderTile();
-            oLayer.AddObject(oTile);
-            oTile.SetRenderTile(oLayer.Layer.ObjectArray[k]);
+    for (var i = 0; i < this.WorkSpace.ObjectArray.length; i++) {
+      var oGeoMap = new RenderGeoMap();
+      this.AddObject(oGeoMap);
+      oGeoMap.SetRenderMap(this.WorkSpace.ObjectArray[i]);
+      //layer
+      for (var j = 0; j < oGeoMap.Map.ObjectArray.length; j++) {
+        var oLayer = new RenderLayer();
+        oGeoMap.AddObject(oLayer);
+        oLayer.SetRenerLayer(oGeoMap.Map.ObjectArray[j]);
+        //tile
+        for (var k = 0; k < oLayer.Layer.ObjectArray.length; k++) {
+          var oTile = new RenderTile();
+          oLayer.AddObject(oTile);
+          oTile.SetRenderTile(oLayer.Layer.ObjectArray[k]);
 
-            //Geometry  此处取Tile里面的PolyDataGeometry
-            /*    if (oTile.Tile.BufferGeometry == undefined) continue; //
+          //Geometry  此处取Tile里面的PolyDataGeometry
+          /*    if (oTile.Tile.BufferGeometry == undefined) continue; //
           for (var l = 0; l < oTile.Tile.BufferGeometry.length; l++) {
             var oGeometry = oTile.Tile.BufferGeometry[l];
  */
-            if (oTile.Tile.PolyDataGeometry == undefined) continue;
-            for (var l = 0; l < oTile.Tile.PolyDataGeometry.length; l++) {
-              var oGeometry = oTile.Tile.PolyDataGeometry[l];
+          if (oTile.Tile.PolyDataGeometry == undefined) continue;
+          for (var l = 0; l < oTile.Tile.PolyDataGeometry.length; l++) {
+            var oGeometry = oTile.Tile.PolyDataGeometry[l];
 
-              var visualStyle = this.GetFeatureFromID(
-                oLayer.Layer,
-                oGeometry.FeatureID
-              );
-              var renderGeometry = new RenderGeometry(
-                oGeometry.polyData,
-                visualStyle,
-                renderer
-              );
-              oTile.AddObject(renderGeometry);
-              renderGeometry.SetRenderGeometry(oGeometry);
+            var ofeature = this.GetFeatureFromID(
+              oLayer.Layer,
+              oGeometry.FeatureID
+            );
 
-              if (oGeometry.GeoType == "Line") {
-                renderGeometry.RenderLines();
-              } else if (oGeometry.GeoType == "Polygon") {
-              } else if (oGeometry.GeoType == "Point") {
-                renderGeometry.RenderPoints();
-              } else if (oGeometry.GeoType == "Tin") {
-                renderGeometry.RenderTins();
-              }
+            var renderGeometry = new RenderGeometry(
+              oGeometry,
+              ofeature,
+              renderer
+            );
+            oTile.AddObject(renderGeometry);
+            renderGeometry.SetRenderGeometry(oGeometry);
+
+            if (oGeometry.GeoType == "Line") {
+            } else if (oGeometry.GeoType == "Polygon") {
+            } else if (oGeometry.GeoType == "Point") {
+            } else if (oGeometry.GeoType == "Tin") {
+              //test
+
+              renderGeometry.RenderTest();
+              //renderGeometry.Render();
             }
           }
         }
       }
-
-      console.log("RenderWorkSpace", this);
     }
+
+    console.log("RenderWorkSpace", this);
   }
 }
 

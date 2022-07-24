@@ -4,7 +4,7 @@
   </div>
 </template>
 <script>
-import { ref, onMounted, watchEffect, toRaw } from "vue";
+import { ref, onMounted, watchEffect } from "vue";
 import RenderWindow3D from "src/RnderVtkCore/RenderWindow3D";
 import DGMJsonIO from "src/core/DGMJsonIO";
 import RenderWorkSpaceManager from "src/RnderVtkCore/RenderWorkSpaceManager";
@@ -21,33 +21,23 @@ export default {
       storeToRefs($workSpace);
     onMounted(() => {
       var jsonio = new DGMJsonIO();
-      // var testwk = jsonio.GetWorkspace("FW_ProFile");
-      var testwk = jsonio.GetWorkspace("D_ZK2");
+      var testwk = jsonio.GetWorkspace("FW_ProFile");
+      var curwk = new RenderWorkSpace(testwk);
       var wkManager = new RenderWorkSpaceManager();
-      /* var curwk = new RenderWorkSpace(testwk);
-      var wkManager = new RenderWorkSpaceManager();
-      wkManager.AddObject(curwk); */
-      //console.log(selcetWorkSpace.value);
+      wkManager.AddObject(curwk);
+      console.log(wkManager.children);
       //$workSpace.changeRenderWorkSpace(wkManager.children);
-      //$workSpace.changeRenderWorkSpace(curwk);
-      var testwindow = new RenderWindow3D();
-      const elem = vtkContainer.value;
-      watchEffect(() => setWK());
+      $workSpace.changeRenderWorkSpace(curwk);
+      /*  watchEffect(() => setWK());
       function setWK() {
         if (selcetWorkSpace.value != null) {
-          var curwk01 = toRaw(selcetWorkSpace.value);
-          console.log("setWK", curwk01);
-          if (curwk01.ClassName == "DGMWorkSpace") {
-            var curwk = new RenderWorkSpace(toRaw(selcetWorkSpace.value));
-            //console.log("setWK", curwk);
-
-            console.log(curwk);
-            wkManager.AddObject(curwk);
-            testwindow.Init(elem, wkManager);
-            $workSpace.changeRenderWorkSpace(curwk);
-          }
+          $workSpace.changeRenderWorkSpace(selcetWorkSpace.value);
         }
-      }
+      } */
+
+      var testwindow = new RenderWindow3D(wkManager);
+      const elem = vtkContainer.value;
+      testwindow.Init(elem);
     });
 
     return {
